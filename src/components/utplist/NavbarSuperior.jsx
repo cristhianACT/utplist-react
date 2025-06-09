@@ -18,7 +18,26 @@ export default function NavbarSuperior({ onToggleTheme, onCleanCompleted, onLogo
     updateMode();
     const observer = new MutationObserver(updateMode);
     observer.observe(document.body, { attributes: true, attributeFilter: ["class", "data-bs-theme"] });
-    return () => observer.disconnect();
+    // --- Script para toggle hamburguesa ---
+    const btnHamburguesa = document.querySelector('.navbar-toggler');
+    const navCollapse = document.getElementById('navContent');
+    if (btnHamburguesa && navCollapse) {
+      btnHamburguesa.addEventListener('click', () => {
+        if (navCollapse.classList.contains('show')) {
+          // Si está abierto, ciérralo
+          navCollapse.classList.remove('show');
+        } else {
+          // Si está cerrado, ábrelo
+          navCollapse.classList.add('show');
+        }
+      });
+    }
+    return () => {
+      observer.disconnect();
+      if (btnHamburguesa && navCollapse) {
+        btnHamburguesa.onclick = null;
+      }
+    };
   }, []);
 
   return (
@@ -41,14 +60,15 @@ export default function NavbarSuperior({ onToggleTheme, onCleanCompleted, onLogo
         <div className="collapse navbar-collapse" id="navContent">
           <ul className="navbar-nav ms-auto align-items-center gap-3">
             <li className="nav-item">
-              <a
-                className="nav-link d-flex align-items-center"
-                href="#"
+              <button
+                className="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center"
+                type="button"
                 data-bs-toggle="modal"
                 data-bs-target="#modalAgregarTarea"
+                style={{marginBottom: '0.5rem'}}
               >
                 <i className="bi bi-calendar-plus me-1"></i> Agregar
-              </a>
+              </button>
             </li>
             <li className="nav-item">
               <select

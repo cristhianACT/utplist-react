@@ -42,15 +42,35 @@ function App() {
   return (
     <div className="App">
       <Router>
-        {isLoggedIn ? (
-          <Routes>
-            <Route path="/" element={<UtpListPage onLogout={handleLogout} onToggleTheme={handleToggleTheme} />} />
-            <Route path="/perfil" element={<PerfilUsuario onToggleTheme={handleToggleTheme} />} />
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        ) : (
-          <LoginRegisterPage onLogin={handleLogin} />
-        )}
+        <Routes>
+          {/* Ruta de login */}
+          <Route 
+            path="/login" 
+            element={
+              isLoggedIn ? <Navigate to="/" /> : <LoginRegisterPage onLogin={handleLogin} />
+            }
+          />
+
+          {/* Rutas protegidas */}
+          <Route 
+            path="/" 
+            element={
+              isLoggedIn ? <UtpListPage onLogout={handleLogout} onToggleTheme={handleToggleTheme} /> : <Navigate to="/login" />
+            }
+          />
+          <Route 
+            path="/perfil" 
+            element={
+              isLoggedIn ? <PerfilUsuario onToggleTheme={handleToggleTheme} /> : <Navigate to="/login" />
+            }
+          />
+
+          {/* Cualquier otra ruta redirige según autenticación */}
+          <Route 
+            path="*" 
+            element={<Navigate to={isLoggedIn ? "/" : "/login"} />} 
+          />
+        </Routes>
       </Router>
     </div>
   );

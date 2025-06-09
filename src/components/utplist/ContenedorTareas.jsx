@@ -28,15 +28,7 @@ export default function ContenedorTareas({ tareas, onCambiarEstado, onEditar }) 
 
   // Si hay más de una tarea, usar grid de hasta 3 columnas
   return (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: `repeat(${tareas.length < 3 ? tareas.length : 3}, 1fr)` ,
-      gap: '2rem',
-      justifyContent: 'center',
-      alignItems: 'flex-start',
-      maxWidth: 1900,
-      margin: '0 auto',
-    }}>
+    <div className="tareas-grid">
       {tareas.map((tarea) => (
         <TarjetaTarea
           key={tarea.id}

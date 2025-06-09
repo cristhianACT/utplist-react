@@ -5,12 +5,17 @@ import ContenedorTareas from "./ContenedorTareas";
 import ModalAgregarTarea from "./ModalAgregarTarea";
 import { api, getToken, dropToken } from "../../api/api";
 import Swal from "sweetalert2";
+import CalendarioTareas from "./CalendarioTareas";
+import TarjetaTarea from "./TarjetaTarea";
 
 export default function UtpListPage({ onLogout, onToggleTheme }) {
   const [tareas, setTareas] = useState([]);
   const [filtro, setFiltro] = useState("todas");
   const [modoOscuro, setModoOscuro] = useState(false);
   const [tareaEditando, setTareaEditando] = useState(null);
+  const [modalTareas, setModalTareas] = useState([]);
+  const [modalDia, setModalDia] = useState(null);
+  const [modalIndex, setModalIndex] = useState(0);
 
   useEffect(() => {
     async function fetchTareas() {
@@ -128,6 +133,52 @@ export default function UtpListPage({ onLogout, onToggleTheme }) {
     window.location.href = "/Login.html";
   }
 
+  // --- Lógica para mostrar tareas simplificadas y paginación ---
+  const tareasSimplificadas = tareas.map(t => ({
+    id: t.id,
+    nombre: t.nombre,
+    fecha: t.fecha,
+    estado: t.estado
+  }));
+  const [paginaTareas, setPaginaTareas] = useState(0);
+  const tareasPorPagina = 4;
+  const totalPaginas = Math.ceil(tareasSimplificadas.length / tareasPorPagina);
+  const tareasPagina = tareasSimplificadas.slice(paginaTareas * tareasPorPagina, (paginaTareas + 1) * tareasPorPagina);
+
+  // Renderizar el modal con las tarjetas completas de las tareas del día seleccionado
+  const renderModal = () => {
+    if (!modalDia || !modalTareas.length) return null;
+    const tareaActual = modalTareas[modalIndex];
+    return (
+      <div className="modal fade show" style={{display:'block', background:'rgba(0,0,0,0.3)'}} tabIndex="-1" role="dialog">
+        <div className="modal-dialog modal-dialog-centered" role="document" style={{maxWidth: '700px', minWidth: '420px'}}>
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title">Tarea del {modalDia} ({modalIndex+1} de {modalTareas.length})</h5>
+              <button type="button" className="btn-close" onClick={() => {setModalDia(null); setModalTareas([]); setModalIndex(0);}}></button>
+            </div>
+            <div className="modal-body">
+              <div className="d-flex justify-content-between align-items-center mb-3" style={{gap: '18px'}}>
+                <button className="btn btn-outline-secondary" style={{height: 48, width: 48, fontSize: 22}} disabled={modalIndex === 0} onClick={() => setModalIndex(i => i-1)}>&lt;</button>
+                <div style={{flex:1, minWidth:0, margin:'0 10px', maxWidth: 600}}>
+                  <TarjetaTarea
+                    tarea={tareaActual}
+                    onCambiarEstado={cambiarEstado}
+                    onEditar={editarTarea}
+                  />
+                </div>
+                <button className="btn btn-outline-secondary" style={{height: 48, width: 48, fontSize: 22}} disabled={modalIndex === modalTareas.length-1} onClick={() => setModalIndex(i => i+1)}>&gt;</button>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-secondary" onClick={() => {setModalDia(null); setModalTareas([]); setModalIndex(0);}}>Cerrar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       <NavbarSuperior
@@ -140,11 +191,41 @@ export default function UtpListPage({ onLogout, onToggleTheme }) {
         fechaActual={fechaActual}
         tareasPendientes={tareasPendientes}
       />
-      <ContenedorTareas
-        tareas={tareasFiltradas}
-        onCambiarEstado={cambiarEstado}
-        onEditar={editarTarea}
-      />
+      <div style={{display:'flex', gap:48, alignItems:'flex-start', maxWidth:1400, margin:'0 auto'}}>
+        <div style={{flex:2}}>
+          <CalendarioTareas tareas={tareas} onDiaClick={(dia, tareasDia) => {setModalDia(dia); setModalTareas(tareasDia); setModalIndex(0);}} />
+        </div>
+        <div style={{
+          flex:1,
+          minWidth:320,
+          borderLeft: '2px solid #444',
+          paddingLeft: 32,
+          marginLeft: 0,
+          height: '100%',
+          boxSizing: 'border-box',
+          ...(window.innerWidth < 900 ? {borderLeft: 'none', paddingLeft: 0, marginTop: 32} : {})
+        }}>
+          <h5 className="mb-3">Tareas del mes</h5>
+          {tareasSimplificadas.length === 0 && <div className="text-muted">No hay tareas este mes.</div>}
+          {tareasPagina.map(t => (
+            <div key={t.id} className="mb-3 p-3 rounded" style={{border:'1px solid #e0e0e0', background:'#fff'}}>
+              <div style={{fontWeight:600}}>{t.nombre}</div>
+              <div className="text-muted small"><i className="bi bi-calendar3 me-2"></i>{t.fecha}</div>
+              <span className={`badge ${t.estado === 'COMPLETADO' ? 'bg-success' : t.estado === 'EN_PROCESO' ? 'bg-primary' : 'bg-secondary'} text-white`}>
+                {t.estado === 'COMPLETADO' ? 'Completado' : t.estado === 'EN_PROCESO' ? 'En Proceso' : 'Pendiente'}
+              </span>
+            </div>
+          ))}
+          {totalPaginas > 1 && (
+            <div className="d-flex justify-content-center align-items-center gap-2 mt-2">
+              <button className="btn btn-outline-secondary" style={{height:36, width:36}} disabled={paginaTareas === 0} onClick={() => setPaginaTareas(p => p-1)}>&lt;</button>
+              <span style={{fontWeight:500}}>{paginaTareas+1} / {totalPaginas}</span>
+              <button className="btn btn-outline-secondary" style={{height:36, width:36}} disabled={paginaTareas === totalPaginas-1} onClick={() => setPaginaTareas(p => p+1)}>&gt;</button>
+            </div>
+          )}
+        </div>
+      </div>
+      {renderModal()}
       <ModalAgregarTarea
         onSave={handleSaveTask}
         tareaEditando={tareaEditando}
